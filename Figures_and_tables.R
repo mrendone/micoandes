@@ -9,7 +9,7 @@ library(dplyr)
 library(readxl)
 
 
-Data10kmFiltrado13_12_20 <- read_excel("./insumos/Data10kmFiltrado13_12_20.xlsx")
+Data10kmFiltrado13_12_20 <- read_excel("../insumos/Data10kmFiltrado13_12_20.xlsx")
 Data10kmFiltrado13_12_20<- Data10kmFiltrado13_12_20 %>% rename(id="IDceldas10km.IDcelda10km")
 mayores_a_100m<-Data10kmFiltrado13_12_20 %>% filter(Elev10kmcell>100)
 
@@ -27,23 +27,23 @@ library(ggspatial)
 library(sf)
 
 
-andes<-st_read("./insumos/Andes.shp")
+andes<-st_read("../insumos/Andes.shp")
 andes<-as(andes, "Spatial")
 
-Colombia<-st_read("./insumos/Colombia.shp")
+Colombia<-st_read("../insumos/Colombia.shp")
 Colombia<-as(Colombia, "Spatial")
 
-spat_mico<-st_read("./insumos/Spat_mico.shp")
+spat_mico<-st_read("../insumos/Spat_mico.shp")
 spat_mico<-as(spat_mico,"Spatial")
 
 
-Colombia_sf<-st_as_sf(ColomabiaNew)
 cordillera_sf<-st_as_sf(andes)
 
 ColomabiaNew<-raster::bind(andes, Colombia) 
+Colombia_sf<-st_as_sf(ColomabiaNew)
 
 
-spat_mico<-st_read("./insumos/Spat_mico.shp")
+spat_mico<-st_read("../insumos/Spat_mico.shp")
 spat_mico<-as(spat_mico,"Spatial")
 
 #This command retrieves the bounding box of the spatial object andes and stores it in the variable bb10
@@ -110,7 +110,7 @@ Elev_C
 
 #command is reading a CSV file named “tabShaEnvirRaref_50.csv” that is a rarefiated data to 50 samples per cell
 
-tabShaEnvirRaref_50<-read.csv("./insumos/tabShaEnvirRaref_50.csv")
+tabShaEnvirRaref_50<-read.csv("../insumos/tabShaEnvirRaref_50.csv")
 
 #Here it is extracting the row names from the dataframe tabShaEnvirRaref_50 and storing them in a variable called index
 
@@ -584,13 +584,13 @@ library(vegan)
 
 #Load spatial inputs
 
-andes<-st_read("./insumos/Andes.shp")
+andes<-st_read("../insumos/Andes.shp")
 andes<-as(andes, "Spatial")
 
-Colombia<-st_read("./insumos/Colombia.shp")
+Colombia<-st_read("../insumos/Colombia.shp")
 Colombia<-as(Colombia, "Spatial")
 
-spat_mico<-st_read("./insumos/Spat_mico.shp")
+spat_mico<-st_read("../insumos/Spat_mico.shp")
 spat_mico<-as(spat_mico,"Spatial")
 
 
