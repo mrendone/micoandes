@@ -24,9 +24,8 @@ library(ggplot2)
 library(raster)
 library(viridis)
 library(ggspatial)
+library(sf)
 
-
-ColomabiaNew<-raster::bind(andes, Colombia) 
 
 andes<-st_read("./insumos/Andes.shp")
 andes<-as(andes, "Spatial")
@@ -41,54 +40,73 @@ spat_mico<-as(spat_mico,"Spatial")
 Colombia_sf<-st_as_sf(ColomabiaNew)
 cordillera_sf<-st_as_sf(andes)
 
+ColomabiaNew<-raster::bind(andes, Colombia) 
+
 
 spat_mico<-st_read("./insumos/Spat_mico.shp")
 spat_mico<-as(spat_mico,"Spatial")
 
-
-bb10 <- bbox(andes) #This command retrieves the bounding box of the spatial object andes and stores it in the variable bb10
-cs10 <- c(1/111.325,1/111.325)*10  # This line defines the cell size for a grid.
-cc10 <- bb10[, 1] + (cs10/2)  # calculate the cell center offset.
-cd10 <- ceiling(diff(t(bb10))/cs10)  # calculate the number of cells per direction
-grd10 <- GridTopology(cellcentre.offset=cc10, cellsize=cs10, cells.dim=cd10)#creates a grid topology with the cell center offset, cell size, and number of cells per direction.
+#This command retrieves the bounding box of the spatial object andes and stores it in the variable bb10
+bb10 <- bbox(andes) 
+# This line defines the cell size for a grid
+cs10 <- c(1/111.325,1/111.325)*10  
+# calculate the cell center offset
+cc10 <- bb10[, 1] + (cs10/2)  
+# calculate the number of cells per direction
+cd10 <- ceiling(diff(t(bb10))/cs10)  
+#creates a grid topology with the cell center offset, cell size, and number of cells per direction.
+grd10 <- GridTopology(cellcentre.offset=cc10, cellsize=cs10, cells.dim=cd10)
 grd10
+#This line creates a SpatialGridDataFrame from the grid topology and some associated data.
 sp_grd10 <- SpatialGridDataFrame(grd10,
                                  data=data.frame(id=1:prod(cd10)),
-                                 proj4string=CRS(proj4string(andes))) #This line creates a SpatialGridDataFrame from the grid topology and some associated data.
+                                 proj4string=CRS(proj4string(andes))) 
 
 
 
-spPoly<-as(sp_grd10, "SpatialPolygonsDataFrame")
+# Convert 'sp_grd10' to a 'SpatialPolygonsDataFrame' object
+spPoly <- as(sp_grd10, "SpatialPolygonsDataFrame")
 
+# Join the data from 'Data10kmFiltrado13_12_20' to the data of 'spPoly' using 'id' as the key
+spPoly@data <- full_join(spPoly@data, Data10kmFiltrado13_12_20, by="id")
 
-spPoly@data<- full_join(spPoly@data, Data10kmFiltrado13_12_20, by="id")
+# Convert 'spPoly' to an 'sf' object and remove rows with NA values
+andes_sf <- st_as_sf(spPoly)
+andes_sf <- na.omit(andes_sf)
 
-andes_sf<-st_as_sf(spPoly)
-andes_sf<-na.omit(andes_sf)
-Colombia_sf<-st_as_sf(ColomabiaNew)
-cordillera_sf<-st_as_sf(andes)
+# Convert 'ColomabiaNew' and 'andes' to 'sf' objects
+Colombia_sf <- st_as_sf(ColomabiaNew)
+cordillera_sf <- st_as_sf(andes)
 
-andes_sf<-andes_sf %>% rename(Elevation=Elev10kmcell, AM_ratio=AM_ratiocell, EM_ratio=EM_ratiocell,
-                              ErM_ratio=ErM_ratiocell, OM_ratio=OM_ratiocell, WanNm_ratio=WanNm_ratiocell,
-                              Nfix_ratio=Nfix_ratiocell, Shannon_Index=shannon10kmRegistros)
+# Rename the columns of 'andes_sf' for better interpretation
+andes_sf <- andes_sf %>% rename(Elevation=Elev10kmcell, AM_ratio=AM_ratiocell, EM_ratio=EM_ratiocell,
+                                ErM_ratio=ErM_ratiocell, OM_ratio=OM_ratiocell, WanNm_ratio=WanNm_ratiocell,
+                                Nfix_ratio=Nfix_ratiocell, Shannon_Index=shannon10kmRegistros)
 
-
-
-Elev_C<-ggplot(data=Colombia_sf)+
-  geom_sf()+
-  geom_sf(data = cordillera_sf)+
-  geom_sf(data = andes_sf,aes(fill = Elevation, color = Elevation), lwd=0) +
-  scale_fill_viridis_c(option = "plasma")+
-  annotation_scale(location = "bl", width_hint = 0.4)+
+# Begin the construction of the plot 
+Elev_C <- ggplot(data = Colombia_sf) +
+  # Add a layer for the data of Colombia
+  geom_sf() +
+  # Add a layer for the data of the cordillera
+  geom_sf(data = cordillera_sf) +
+  # Add a layer for the data of the Andes, with colors based on the elevation
+  geom_sf(data = andes_sf, aes(fill = Elevation, color = Elevation), lwd = 0) +
+  # Add a color scale for the fill based on the "plasma" palette
+  scale_fill_viridis_c(option = "plasma") +
+  # Add a color scale for the lines based on the "plasma" palette
+  scale_color_viridis_c(option = "plasma") +
+  # Add a scale annotation at the bottom left of the plot
+  annotation_scale(location = "bl", width_hint = 0.4) +
+  # Apply a black and white theme to the plot
   theme_bw()
 
+# Display the plot
+Elev_C
 
 
-
-
-##########
-#Figure 2#
-##########
+############
+# Figure 2 #
+############
 
 #command is reading a CSV file named “tabShaEnvirRaref_50.csv” that is a rarefiated data to 50 samples per cell
 
@@ -197,9 +215,9 @@ plot_grid(shannon10kmRegistrosGraphElev,RAFshannonRegistrosGraphElev,shannon10km
 fig2<-plot_grid(shannon10kmRegistrosGraphElev,RAFshannonRegistrosGraphElev,shannon10kmRegistrosGraphOCSTHA,RAFshannonRegistrosGraphOCSTHA,shannon10kmRegistrosGraphNitro,RAFshannonRegistrosGraphNitrogeno, labels=c("a","b","c","d","e","f"), ncol=2,label_size = 20)
 
 
-##########
-#Figure 3#
-##########
+############
+# Figure 3 #
+############
 
 Data10kmFiltrado_4000 <-Data10kmFiltrado13_12_20%>%filter(Elev10kmcell<=4000)
 Data10kmFiltrado_200 <-Data10kmFiltrado13_12_20%>%filter(Elev10kmcell>=200)
@@ -322,6 +340,23 @@ plot_grid(AM_ratiocell10kmGraph, EM_ratiocell10kmGraph, ErM_ratiocell10kmGraph, 
 
 grap3<-plot_grid(AM_ratiocell10kmGraph, EM_ratiocell10kmGraph, ErM_ratiocell10kmGraph,  OM_ratiocell10kmGraph, 
                  WanNm_ratiocell10kmGraph, Nfix_ratiocell10kmGraph, labels=c("a","b","c","d","e","f"))
+
+
+#############
+#  Figure 4 #
+#############
+
+# The process is the same as for Figure 1, we only change the object to fill,
+# in this case we are going to use the Shannon index.
+
+Shannon_colombia<-ggplot(data=Colombia_sf)+ geom_sf()+
+  geom_sf(data = cordillera_sf)+
+  geom_sf(data = andes_sf,aes(fill = Shannon_Index, color=Shannon_Index), lwd=0) +
+  scale_fill_viridis_c(option = "plasma")+
+  scale_color_viridis_c(option = "plasma") +
+  annotation_scale(location = "bl", width_hint = 0.4)+
+  theme_bw()
+
 
 
 #######################################
@@ -475,21 +510,68 @@ apatheme=theme_bw()+
         axis.title=element_text(size=12),
         legend.text = element_text(size = 13))
 
-#Figure 5 
-
-NitrogenGLM_final<-Nitrogeno_micorrizas  + apatheme + labs(x = "\n Estimated value of the variable’s coefficient in the model \n ", y = NULL)  
 
 
-CarbonGLM_final<-Carbono_stock_micorrizas  + apatheme + labs(x = NULL, y = NULL)  
+# Create a plot for Nitrogen data
+# 'Nitrogeno_micorrizas' is assumed to be a ggplot object
+# 'apatheme' is assumed to be a theme object
+# The x-axis label is set to represent the estimated value of the variable’s coefficient in the model
+NitrogenGLM_final <- Nitrogeno_micorrizas + apatheme + labs(x = "\n Estimated value of the variable’s coefficient in the model \n ", y = NULL)
 
+# Create a plot for Carbon data
+# 'Carbono_stock_micorrizas' is assumed to be a ggplot object
+# No axis labels are set in this plot
+CarbonGLM_final <- Carbono_stock_micorrizas + apatheme + labs(x = NULL, y = NULL)
 
-shannonGLM_final<-shannonGLM_plots+ apatheme + labs(x = NULL, y = NULL) 
+# Create a plot for Shannon Index data
+# 'shannonGLM_plots' is assumed to be a ggplot object
+# No axis labels are set in this plot
+shannonGLM_final <- shannonGLM_plots + apatheme + labs(x = NULL, y = NULL)
 
+# Combine the three plots into a grid with 3 rows and 1 column
+# The plots are aligned vertically and labeled as 'a', 'b', and 'c'
 plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
           ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
 
-Graph5<-plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
-                  ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
+# Store the combined plot in 'Graph5'
+Graph5 <- plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
+                    ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
+
+
+
+############
+# Figure 6 #
+############
+
+library(cowplot)
+library(ggplot2)
+library(viridis)
+
+
+# Create a scatter plot for the 'andes_sf' data
+# The x-axis represents the 'BIO1' variable (Annual Mean Temperature °C)
+# The y-axis represents the 'BIO12' variable (Average annual Precipitation mm)
+# The color of the points is determined by the 'AM_ratio' variable
+# The color scale is set to the "plasma" option from the 'viridis' palette
+AM_annualTemp <- ggplot(data=andes_sf, aes(x= BIO1, y= BIO12, color=AM_ratio)) +
+  geom_point() +
+  scale_color_viridis(option = "plasma") +
+  labs(x = "Annual Mean Temperature °C", y = "Average annual Precipitation mm") +
+  theme_classic()
+
+# Create a scatter plot for the 'andes_sf' data
+# The x-axis represents the 'OCSTHA' variable (Soil Organic Carbon Stock (ton/ha))
+# The y-axis represents the 'Nitrogeno' variable (Total Nitrogen in Soil (cg/kg))
+# The color of the points is determined by the 'AM_ratio' variable
+AM_Nitrogeno_Carbono <- ggplot(data=andes_sf, aes(x= OCSTHA, y= Nitrogeno, color=AM_ratio)) +
+  geom_point() +
+  scale_color_viridis(option = "plasma") +
+  labs(x = "Soil Organic Carbon Stock (ton/ha)", y = "Total Nitrogen in Soil (cg/kg)") +
+  theme_classic()
+
+# Combine the two plots into a grid with 1 row and 2 columns
+# The plots are labeled as 'a' and 'b'
+plot_grid(AM_annualTemp, AM_Nitrogeno_Carbono, nrow = 1, labels = c("a", "b"))
 
 
 ############
@@ -513,45 +595,60 @@ spat_mico<-as(spat_mico,"Spatial")
 
 
 # 
-
-bb10 <- bbox(andes) #This command retrieves the bounding box of the spatial object andes and stores it in the variable bb10
-cs10 <- c(1/111.325,1/111.325)*10  # This line defines the cell size for a grid.
-cc10 <- bb10[, 1] + (cs10/2)  # calculate the cell center offset.
-cd10 <- ceiling(diff(t(bb10))/cs10)  # calculate the number of cells per direction
-grd10 <- GridTopology(cellcentre.offset=cc10, cellsize=cs10, cells.dim=cd10)#creates a grid topology with the cell center offset, cell size, and number of cells per direction.
+#This command retrieves the bounding box of the spatial object andes and stores it in the variable bb10
+bb10 <- bbox(andes) 
+# This line defines the cell size for a grid.
+cs10 <- c(1/111.325,1/111.325)*10  
+# calculate the cell center offset.
+cc10 <- bb10[, 1] + (cs10/2) 
+# calculate the number of cells per direction
+cd10 <- ceiling(diff(t(bb10))/cs10) 
+#creates a grid topology with the cell center offset, cell size, and number of cells per direction.
+grd10 <- GridTopology(cellcentre.offset=cc10, cellsize=cs10, cells.dim=cd10)
 grd10
+#This line creates a SpatialGridDataFrame from the grid topology and some associated data.
 sp_grd10 <- SpatialGridDataFrame(grd10,
                                  data=data.frame(id=1:prod(cd10)),
-                                 proj4string=CRS(proj4string(andes))) #This line creates a SpatialGridDataFrame from the grid topology and some associated data.
+                                 proj4string=CRS(proj4string(andes))) 
 filtrado_100<-Data10kmFiltrado13_12_20%>%filter(Elev10kmcell>101)
 
-
-xy10<-as.data.frame(coordinates(sp_grd10)) #This command extracts the coordinates of the SpatialGridDataFrame and converts them into a dataframe.
-xy10km<-xy10[c(Data10kmFiltrado13_12_20$id),] #This line selects the rows of the dataframe xy10 that correspond to the ids in Data10kmFiltrado13_12_20
-Data10kmFiltrado13_12_20<-cbind(Data10kmFiltrado13_12_20, xy10km) #This command adds the selected coordinates to the dataframe Data10kmFiltrado13_12_20
-shannon10kmEspeciesAM_EM_ERM<-c(diversity(Data10kmFiltrado13_12_20[,9:11], index = "shannon")) #This line calculates the Shannon diversity of columns 9 to 11 of Data10kmFiltrado13_12_20
-Data10kmFiltrado13_12_20<-cbind(Data10kmFiltrado13_12_20,shannon10kmEspeciesAM_EM_ERM) #This command adds the calculated Shannon diversity to the dataframe Data10kmFiltrado13_12_20.
+#This command extracts the coordinates of the SpatialGridDataFrame and converts them into a dataframe.
+xy10<-as.data.frame(coordinates(sp_grd10))
+#This line selects the rows of the dataframe xy10 that correspond to the ids in Data10kmFiltrado13_12_20
+xy10km<-xy10[c(Data10kmFiltrado13_12_20$id),] 
+#This command adds the selected coordinates to the dataframe Data10kmFiltrado13_12_20
+Data10kmFiltrado13_12_20<-cbind(Data10kmFiltrado13_12_20, xy10km) 
+#This line calculates the Shannon diversity of columns 9 to 11 of Data10kmFiltrado13_12_20
+shannon10kmEspeciesAM_EM_ERM<-c(diversity(Data10kmFiltrado13_12_20[,9:11], index = "shannon")) 
+#This command adds the calculated Shannon diversity to the dataframe Data10kmFiltrado13_12_20.
+Data10kmFiltrado13_12_20<-cbind(Data10kmFiltrado13_12_20,shannon10kmEspeciesAM_EM_ERM) 
 
 filtrado_100<-Data10kmFiltrado13_12_20%>%filter(Elev10kmcell>101)
-
-ProporcionMyco10km<-cbind(filtrado_100[,c(45:49)]) #This line is creating a new dataframe ProporcionMyco10km that consists of columns 45 to 49 from the dataframe Data10kmFiltrado13_12_20
-ProporcionMyco10km.hel100<-decostand(ProporcionMyco10km, "hellinger") #transforming the data in ProporcionMyco10km using Hellinger transformation
-climatico10km100<-cbind(filtrado_100[,c(15,26)])# new dataframe climatico10km that consists of columns 15 and 26 from the dataframe Data10kmFiltrado13_12_20
+#This line is creating a new dataframe ProporcionMyco10km that consists of columns 45 to 49 from the dataframe Data10kmFiltrado13_12_20
+ProporcionMyco10km<-cbind(filtrado_100[,c(45:49)]) 
+#transforming the data in ProporcionMyco10km using Hellinger transformation
+ProporcionMyco10km.hel100<-decostand(ProporcionMyco10km, "hellinger") 
+# new dataframe climatico10km that consists of columns 15 and 26 from the dataframe Data10kmFiltrado13_12_20
+climatico10km100<-cbind(filtrado_100[,c(15,26)])
 edafico10km100<-cbind(filtrado_100[,c(35:43,53)])
 
 row.names(xy10km) <- as.numeric(row.names(xy10km))
 
 xy10km_filtrado <- xy10km[row.names(xy10km) %in% filtrado_100$id, ]
 
-espacial10km100<-cbind(xy10km_filtrado) #This line is creating a new dataframe espacial10km that consists of the data in xy10km
-ProporcionMyco10km.part100<- varpart(ProporcionMyco10km.hel100,climatico10km100,edafico10km100,espacial10km100) # This line is performing a variation partitioning analysis on the Hellinger-transformed data 
-                                                                                                                # with respect to the climatic, edaphic, and spatial dataframes. The results are stored in ProporcionMyco10km.part
-ProporcionMyco10km.part100 #printing the results of the variation partitioning analysis
-plot(ProporcionMyco10km.part100, digits=2, Xnames= c("Climatic", "Edaphic", "Spatial")
-     , bg=c("lightsteelblue3", "orange3", "plum2", "navy"))# This is creating a plot of the variation partitioning analysis results. The digits=2 argument specifies that the numbers on the plot should be rounded to 2 decimal places. 
+#This line is creating a new dataframe espacial10km that consists of the data in xy10km
+espacial10km100<-cbind(xy10km_filtrado) 
+# This line is performing a variation partitioning analysis on the Hellinger-transformed data 
+# with respect to the climatic, edaphic, and spatial dataframes. The results are stored in ProporcionMyco10km.part
+ProporcionMyco10km.part100<- varpart(ProporcionMyco10km.hel100,climatico10km100,edafico10km100,espacial10km100) 
+
+ProporcionMyco10km.part100 
+
+# This is creating a plot of the variation partitioning analysis results. The digits=2 argument specifies that the numbers on the plot should be rounded to 2 decimal places. 
 # The Xnames argument provides the names for the different factors in the analysis. 
 # the bg argument specifies the colors to be used in the plot.
-
+plot(ProporcionMyco10km.part100, digits=2, Xnames= c("Climatic", "Edaphic", "Spatial")
+     , bg=c("lightsteelblue3", "orange3", "plum2", "navy"))
 
 
 
