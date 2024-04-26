@@ -9,7 +9,7 @@ library(dplyr)
 library(readxl)
 
 
-Data10kmFiltrado13_12_20 <- read_excel("./insumos/Data10kmFiltrado13_12_20.xlsx")
+Data10kmFiltrado13_12_20 <- read_excel("insumos/Data10kmFiltrado13_12_20.xlsx")
 Data10kmFiltrado13_12_20<- Data10kmFiltrado13_12_20 %>% rename(id="IDceldas10km.IDcelda10km")
 mayores_a_100m<-Data10kmFiltrado13_12_20 %>% filter(Elev10kmcell>100)
 
@@ -27,23 +27,24 @@ library(ggspatial)
 library(sf)
 
 
-andes<-st_read("./insumos/Andes.shp")
+andes<-st_read("insumos/Andes.shp")
 andes<-as(andes, "Spatial")
 
-Colombia<-st_read("./insumos/Colombia.shp")
+Colombia<-st_read("insumos/Colombia.shp")
 Colombia<-as(Colombia, "Spatial")
 
-spat_mico<-st_read("./insumos/Spat_mico.shp")
+spat_mico<-st_read("insumos/Spat_mico.shp")
 spat_mico<-as(spat_mico,"Spatial")
+
+ColomabiaNew<-raster::bind(andes, Colombia) 
 
 
 Colombia_sf<-st_as_sf(ColomabiaNew)
 cordillera_sf<-st_as_sf(andes)
 
-ColomabiaNew<-raster::bind(andes, Colombia) 
 
 
-spat_mico<-st_read("./insumos/Spat_mico.shp")
+spat_mico<-st_read("insumos/Spat_mico.shp")
 spat_mico<-as(spat_mico,"Spatial")
 
 #This command retrieves the bounding box of the spatial object andes and stores it in the variable bb10
@@ -365,6 +366,7 @@ Shannon_colombia<-ggplot(data=Colombia_sf)+ geom_sf()+
 
 library(MASS)
 library(car)
+library(sjPlot)
 
 # Identify Final models with stepAIC
 
@@ -446,6 +448,12 @@ ModeloFinal_WanNM_Carbono<- glm(formula = WanNm_ratiocell ~ BIO1+ PHIHOX , famil
                                 data = mayores_a_100m)
 
 
+shannonNitrogenoGLM <- glm(shannon10kmRegistros ~ BIO1 + BIO12 + Nitrogeno,
+                           data = mayores_a_100m,
+                           gaussian(link = "identity"))
+
+shannonCarbonoGLMFINAL <- glm(shannon10kmRegistros ~ BIO1 + BIO12 + OCSTHA,
+                              data = mayores_a_100m, family = gaussian(link = "identity"))
 
 #Create supplementary table of models 
 
@@ -511,67 +519,20 @@ apatheme=theme_bw()+
         legend.text = element_text(size = 13))
 
 
-
-# Create a plot for Nitrogen data
-# 'Nitrogeno_micorrizas' is assumed to be a ggplot object
-# 'apatheme' is assumed to be a theme object
-# The x-axis label is set to represent the estimated value of the variable’s coefficient in the model
-NitrogenGLM_final <- Nitrogeno_micorrizas + apatheme + labs(x = "\n Estimated value of the variable’s coefficient in the model \n ", y = NULL)
-
-# Create a plot for Carbon data
-# 'Carbono_stock_micorrizas' is assumed to be a ggplot object
-# No axis labels are set in this plot
-CarbonGLM_final <- Carbono_stock_micorrizas + apatheme + labs(x = NULL, y = NULL)
-
-# Create a plot for Shannon Index data
-# 'shannonGLM_plots' is assumed to be a ggplot object
-# No axis labels are set in this plot
-shannonGLM_final <- shannonGLM_plots + apatheme + labs(x = NULL, y = NULL)
-
-# Combine the three plots into a grid with 3 rows and 1 column
-# The plots are aligned vertically and labeled as 'a', 'b', and 'c'
-plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
-          ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
-
-# Store the combined plot in 'Graph5'
-Graph5 <- plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
-                    ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
+NitrogenGLM_final<-Nitrogeno_micorrizas  + apatheme + labs(x = "\n Estimated value of the variable’s coefficient in the model \n ", y = NULL)  
 
 
-
-############
-# Figure 6 #
-############
-
-library(cowplot)
-library(ggplot2)
-library(viridis)
+CarbonGLM_final<-Carbono_stock_micorrizas  + apatheme + labs(x = NULL, y = NULL)  
 
 
-# Create a scatter plot for the 'andes_sf' data
-# The x-axis represents the 'BIO1' variable (Annual Mean Temperature °C)
-# The y-axis represents the 'BIO12' variable (Average annual Precipitation mm)
-# The color of the points is determined by the 'AM_ratio' variable
-# The color scale is set to the "plasma" option from the 'viridis' palette
-AM_annualTemp <- ggplot(data=andes_sf, aes(x= BIO1, y= BIO12, color=AM_ratio)) +
-  geom_point() +
-  scale_color_viridis(option = "plasma") +
-  labs(x = "Annual Mean Temperature °C", y = "Average annual Precipitation mm") +
-  theme_classic()
+shannonGLM_final<-shannonGLM_plots+ apatheme + labs(x = NULL, y = NULL) 
 
-# Create a scatter plot for the 'andes_sf' data
-# The x-axis represents the 'OCSTHA' variable (Soil Organic Carbon Stock (ton/ha))
-# The y-axis represents the 'Nitrogeno' variable (Total Nitrogen in Soil (cg/kg))
-# The color of the points is determined by the 'AM_ratio' variable
-AM_Nitrogeno_Carbono <- ggplot(data=andes_sf, aes(x= OCSTHA, y= Nitrogeno, color=AM_ratio)) +
-  geom_point() +
-  scale_color_viridis(option = "plasma") +
-  labs(x = "Soil Organic Carbon Stock (ton/ha)", y = "Total Nitrogen in Soil (cg/kg)") +
-  theme_classic()
+cowplot::plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
+                   ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
 
-# Combine the two plots into a grid with 1 row and 2 columns
-# The plots are labeled as 'a' and 'b'
-plot_grid(AM_annualTemp, AM_Nitrogeno_Carbono, nrow = 1, labels = c("a", "b"))
+
+Graph5<-cowplot::plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
+                  ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
 
 
 ############
