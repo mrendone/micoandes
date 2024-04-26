@@ -5,7 +5,7 @@
 #                                #
 ##################################
 
-file_pl_fg <- "insumos/Idcell_plantas_hongos.csv"
+file_pl_fg <- "../insumos/Idcell_plantas_hongos.csv"
 pl_fg <- read.csv(file_pl_fg)
 
 #Here we apply a filter:
@@ -72,7 +72,7 @@ all_matrices_lists<-c(list(matMycoRaref_5[[1]]), list(matMycoRaref_5[[2]]))
 
 # Read an Excel file named 'Data10kmFiltrado13_12_20.xlsx' from the current directory and assign it to 'Data10kmFiltrado13_12_20'
 library(readxl)
-Data10kmFiltrado13_12_20 <- read_excel("insumos/Data10kmFiltrado13_12_20.xlsx")
+Data10kmFiltrado13_12_20 <- read_excel("../insumos/Data10kmFiltrado13_12_20.xlsx")
 
 # Define a function 'export_results_plots_function' with two parameters 'y' and 'h'
 export_results_plots_function <- function(y, h) {
@@ -143,7 +143,7 @@ export_results_plots_function <- function(y, h) {
 # Call the 'export_results_plots_function' function with 'all_matrices_lists' and 'save_directory' as arguments
 export_results_plots_function(all_matrices_lists, save_directory)
 
-(load("insumos/matMycoRaref_20.RData"))
+(load("../insumos/matMycoRaref_20.RData"))
 # Apply the 'unique' function to the row names of each matrix in 'matMycoRaref_20'
 apply(sapply(matMycoRaref_20,rownames),1,unique)
 
@@ -188,7 +188,7 @@ for(i in c(5,10,20,30,40,50,75,100,200))
 }
 
 
-(load("/insumos/matMycoRaref_100.RData"))
+(load("../insumos/matMycoRaref_100.RData"))
 
 # Define a function 'ratiocell' that calculates the ratio of each column to the row sum of selected columns in a given matrix 'x'
 ratiocell<-function(x){
