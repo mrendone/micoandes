@@ -4,7 +4,7 @@
 
 library(Metrics)
 library(readxl)
-Data10kmFiltrado13_12_20 <-read_excel("insumos/Data10kmFiltrado13_12_20.xlsx")
+Data10kmFiltrado13_12_20 <-read_excel("../insumos/Data10kmFiltrado13_12_20.xlsx")
 
 library(dplyr)
 mayores_a_100m<-Data10kmFiltrado13_12_20 %>% filter(Elev10kmcell>100)
