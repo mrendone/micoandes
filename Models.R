@@ -468,3 +468,4 @@ resultados_Carbono<-cbind(Modelos_Carbono, Rmse_Carbono)
 
 View(resultados_Nitrogeno)
 View(resultados_Carbono)
+
