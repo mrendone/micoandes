@@ -13,9 +13,12 @@ Data10kmFiltrado13_12_20 <- read_excel("insumos/Data10kmFiltrado13_12_20.xlsx")
 Data10kmFiltrado13_12_20<- Data10kmFiltrado13_12_20 %>% rename(id="IDceldas10km.IDcelda10km")
 mayores_a_100m<-Data10kmFiltrado13_12_20 %>% filter(Elev10kmcell>100)
 
-library(ggpubr)
-library(cowplot)
+library(mgcv)
 library(ggplot2)
+library(cowplot)
+library(ggpubr)
+library(car)
+
 ############
 # Figure 1 #
 ############
@@ -109,9 +112,10 @@ Elev_C
 # Figure 2 #
 ############
 
+
 #command is reading a CSV file named “tabShaEnvirRaref_50.csv” that is a rarefiated data to 50 samples per cell
 
-tabShaEnvirRaref_50<-read.csv("./insumos/tabShaEnvirRaref_50.csv")
+tabShaEnvirRaref_50<-read.csv("insumos/tabShaEnvirRaref_50.csv")
 
 #Here it is extracting the row names from the dataframe tabShaEnvirRaref_50 and storing them in a variable called index
 
@@ -119,45 +123,101 @@ index<-row.names(tabShaEnvirRaref_50)
 tabShaEnvirRaref_50$id<-as.numeric(index)
 
 #Here it is selecting columns 1 and 53 from the dataframe Data10kmFiltrado13_12_20 and storing them in a variable called nitro
+id_nitro<-which(Data10kmFiltrado13_12_20$id==tabShaEnvirRaref_50$X)
 
-nitro<-Data10kmFiltrado13_12_20[,c(1,53)]
+nitro<-subset(Data10kmFiltrado13_12_20, id %in% c(tabShaEnvirRaref_50$X))
 
 #This command is performing an “inner join” of the dataframes tabShaEnvirRaref_50 and nitro based on the id column. The result is stored back in tabShaEnvirRaref_50.
 
-tabShaEnvirRaref_50<-inner_join(tabShaEnvirRaref_50, nitro, by="id")
-
+tabShaEnvirRaref_50<-data.frame(tabShaEnvirRaref_50,nitro)
 #Shannon graph and shannon rarefied graphs  vs elevation and Carbon stock
 
-shannon10kmRegistrosGraphElev<-ggplot(data=mayores_a_100m, aes(Elev10kmcell, shannon10kmRegistros))+
-  geom_point()+
-  geom_smooth(method = "lm", color = "#1f77b4")+
-  theme_classic()+
-  theme(plot.title = element_text(hjust = 0.5, size = 20),axis.text= element_text(size=12),axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))+
-  labs(x="Elevation", y= "Diversity of types of mycorrhizal associations", size=12)+
-  stat_cor(method = "pearson",cor.coef.name=c("r"))+
-  ggtitle("Original Data")
+modelo_gamElev10kmcell <- gam(shannon10kmRegistros ~ s(Elev10kmcell, bs = "cs"), data = mayores_a_100m)
+
+# Calculate confidence intervals for predictions
+intervalos_confianzaElev10kmcell <- predict(modelo_gamElev10kmcell, type = "response", interval = "confidence", se.fit = TRUE)
+
+# Extract predictions and margin of error
+prediccionesElev10kmcell <- intervalos_confianzaElev10kmcell$fit
+margen_errorElev10kmcell <- intervalos_confianzaElev10kmcell$se.fit
+
+# Calculate the lower and upper limits of the confidence intervals
+lwrElev10kmcell <- prediccionesElev10kmcell - 1.96 * margen_errorElev10kmcell  
+uprElev10kmcell <- prediccionesElev10kmcell + 1.96 * margen_errorElev10kmcell  
+
+# Limit the predicted values so that they are within the expected range
+prediccionesElev10kmcell <- pmin(pmax(prediccionesElev10kmcell, 0), 1.277034)
+lwrElev10kmcell<- pmin(pmax(lwrElev10kmcell, 0), 1.277034)
+uprElev10kmcell <- pmin(pmax(uprElev10kmcell, 0), 1.277034)
+
+
+# Create a dataframe with the predictions and confidence intervals
+datos_filtrados_gamElev10kmcell <- data.frame(Elev10kmcell = mayores_a_100m$Elev10kmcell,
+                                              predicciones= prediccionesElev10kmcell,  
+                                              lwr=lwrElev10kmcell ,  
+                                              upr=uprElev10kmcell )  
+
+
+shannon10kmRegistrosGraphNElev10kmcell_gam <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y = shannon10kmRegistros)) +
+  geom_line(data = datos_filtrados_gamElev10kmcell, aes(x = Elev10kmcell, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_gamElev10kmcell, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +  # Intervalo de confianza
+  theme_classic() +
+  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x = "Elev10kmcell", y = "Diversity of types of mycorrhizal associations")
+  geom_text(data = NULL, aes(label = paste("r =", round(cor(mayores_a_100m$Elev10kmcell, mayores_a_100m$shannon10kmEspecies), 2), ", p < 2.2e-16")), x = min(mayores_a_100m$Elev10kmcell), y = max(mayores_a_100m$shannon10kmRegistros), hjust = 0, vjust = 1, size = 4, color = "black")
+
+
+
 
 RAFshannonRegistrosGraphElev<-ggplot(tabShaEnvirRaref_50, aes(x = Elev10kmcell, y = mean_sha)) +
   geom_point()+
-  geom_smooth(method = "lm", color = "#1f77b4")+
+  geom_smooth( color = "#1f77b4")+
   geom_segment(aes(xend = Elev10kmcell, yend = s_p5), linetype = "dotdash", color = "grey") +
   geom_segment(aes(xend = Elev10kmcell, yend = s_p95), linetype = "dotdash", color = "grey") +
   
   geom_point(color = "black", size = 0.75)+ stat_cor(method = "pearson",cor.coef.name=c("r")) + labs(x="Elevation", y= "Diversity of types of mycorrhizal associations")+
   theme_classic()+
   theme(plot.title = element_text(hjust = 0.5, size = 20),axis.text= element_text(size=12), axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))+
-  ggtitle("Rarified Data")
+  ggtitle("Rarefied Data")
 
-shannon10kmRegistrosGraphOCSTHA<-ggplot(data=mayores_a_100m, aes(OCSTHA, shannon10kmRegistros))+
-  geom_point()+
-  geom_smooth(method = "lm", color = "#1f77b4")+
-  theme_classic()+
-  theme(axis.text= element_text(size=12), axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))+
-  labs(x="Soil organic carbon stock (ton/ha)", y= "Diversity of types of mycorrhizal associations", size=12) + stat_cor(method = "pearson",cor.coef.name=c("r"))
+
+
+####################   gam model for Carbon 
+
+modelo_gamOCSTHA <- gam(shannon10kmRegistros ~ s(OCSTHA, bs = "cs"), data = mayores_a_100m)
+
+intervalos_confianzaOCSTHA <- predict(modelo_gamOCSTHA, type = "response", interval = "confidence", se.fit = TRUE)
+prediccionesOCSTHA <- intervalos_confianzaOCSTHA$fit
+margen_errorOCSTHA  <- intervalos_confianzaOCSTHA$se.fit
+
+lwrOCSTHA <- prediccionesOCSTHA - 1.96 * margen_errorOCSTHA   
+uprOCSTHA <- prediccionesOCSTHA + 1.96 * margen_errorOCSTHA   
+
+prediccionesOCSTHA <- pmin(pmax(prediccionesOCSTHA, 0.1988719), 0.7029917)
+lwrOCSTHA<- pmin(pmax(lwrOCSTHA, 0.1988719), 0.7029917)
+uprOCSTHA <- pmin(pmax(uprOCSTHA, 0.1988719), 0.7029917)
+
+
+datos_filtrados_gamOCSTHA <- data.frame(OCSTHA = mayores_a_100m$OCSTHA,
+                                        predicciones= prediccionesOCSTHA , 
+                                        lwr=lwrOCSTHA,  
+                                        upr=uprOCSTHA ) 
+
+shannon10kmRegistrosGraphNOCSTHA_gam <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = OCSTHA, y = shannon10kmRegistros)) +
+  geom_line(data = datos_filtrados_gamOCSTHA, aes(x = OCSTHA, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_gamOCSTHA, aes(x = OCSTHA, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +  # Intervalo de confianza
+  theme_classic() +
+  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x = "Soil organic carbon stock (ton/ha)", y = "Diversity of types of mycorrhizal associations")
+shannon10kmRegistrosGraphNOCSTHA_gam <- shannon10kmRegistrosGraphNOCSTHA_gam +
+  geom_text(data = NULL, aes(label = paste("r =", round(cor(mayores_a_100m$OCSTHA,  mayores_a_100m$shannon10kmEspecies), 2), ", p < 2.2e-16")), x = min(mayores_a_100m$OCSTHA), y = max(mayores_a_100m$shannon10kmRegistros), hjust = 0, vjust = 1, size = 4, color = "black")
+
 
 RAFshannonRegistrosGraphOCSTHA<-ggplot(tabShaEnvirRaref_50, aes(x = OCSTHA, y = mean_sha)) +
   geom_point()+
-  geom_smooth(method = "lm", color = "#1f77b4")+
+  geom_smooth(color = "#1f77b4")+
   geom_segment(aes(xend = OCSTHA, yend = s_p5), linetype = "dotdash", color = "grey") +
   geom_segment(aes(xend = OCSTHA, yend = s_p95), linetype = "dotdash", color = "grey") +
   
@@ -165,42 +225,42 @@ RAFshannonRegistrosGraphOCSTHA<-ggplot(tabShaEnvirRaref_50, aes(x = OCSTHA, y = 
   theme_classic()+
   theme(axis.text= element_text(size=12), axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))
 
-# Fit lm of shannon10kmRegistros ~ Nitrogeno
+####################  gam model for Nitrogen
 
-modelo <- lm(shannon10kmRegistros ~ Nitrogeno, data = mayores_a_100m)
+modelo_gamNitrogeno <- gam(shannon10kmRegistros ~ s(Nitrogeno, bs = "cs"), data = mayores_a_100m)
 
-# Predict values for x
-predicciones <- predict(modelo, newdata = mayores_a_100m)
 
-# Get confidence intervals
-conf_int <- predict(modelo, newdata = mayores_a_100m, interval = "confidence")
+intervalos_confianzaNitrogeno <- predict(modelo_gamNitrogeno, type = "response", interval = "confidence", se.fit = TRUE)
+prediccionesNitrogeno <- intervalos_confianzaNitrogeno$fit
+margen_errorNitrogeno <- intervalos_confianzaNitrogeno$se.fit
 
-# Create a new data set with only the points where the predictions are >= 0
-datos_filtrados <- subset(mayores_a_100m, predicciones >= 0)
+lwrNitrogeno<- prediccionesNitrogeno - 1.96 * margen_errorNitrogeno   
+uprNitrogeno <- margen_errorNitrogeno + 1.96 * margen_errorNitrogeno   
+lwrNitrogeno<- pmin(pmax(lwrNitrogeno, 0.2384304), 0.7743406)
+uprNitrogeno <- pmin(pmax(uprNitrogeno, 0.2384304), 0.7743406)
 
-# Filter predictions and confidence intervals for filtered data
-predicciones_filtradas <- predicciones[predicciones >= 0]
-conf_int_filtrado <- conf_int[predicciones >= 0, ]
 
-# Add the filtered predictions and confidence intervals to the filtered data set
-datos_filtrados <- cbind(datos_filtrados, predicciones = predicciones_filtradas, conf_int_filtrado)
+datos_filtrados_gamNitrogeno <- data.frame(Nitrogeno = mayores_a_100m$Nitrogeno,
+                                           predicciones= prediccionesNitrogeno ,  
+                                           lwr=lwrNitrogeno,  
+                                           upr=uprNitrogeno )  
 
-# Plot the data, linear regression line and confidence intervals
-shannon10kmRegistrosGraphNitro <- ggplot() +
-  geom_point(data = mayores_a_100m, aes(x = Nitrogeno, y = shannon10kmRegistros)) +
-  geom_line(data = datos_filtrados, aes(x = Nitrogeno, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +  
-  geom_ribbon(data = datos_filtrados, aes(x = Nitrogeno, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
-  theme_classic() +
-  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
-  labs(x = "Total Nitrogeno in soil (cg/kg)", y = "Diversity of types of mycorrhizal associations")
 
-# Add Pearson correlation coefficient and p value
-shannon10kmRegistrosGraphNitro <- shannon10kmRegistrosGraphNitro +
-  geom_text(data = NULL, aes(label = paste("r =", round(cor(mayores_a_100m$Nitrogeno, mayores_a_100m$shannon10kmRegistros), 2), ", p < 2.2e- 16 ")), x = min(mayores_a_100m$Nitrogeno), y = max(mayores_a_100m$shannon10kmRegistros), hjust = 0, vjust = 1, size = 4, color = "black")
+shannon10kmRegistrosGraphNNitrogeno_gam <- ggplot(data = mayores_a_100m, aes(x = Nitrogeno, y = shannon10kmRegistros)) +
+  geom_point() +
+  geom_smooth(color = "#1f77b4")+
+  theme_classic()
+theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x =  "Total Nitrogeno in soil (cg/kg)", y = "Diversity of types of mycorrhizal associations")
+
+# Agregar coeficiente de correlación de Pearson y valor p
+shannon10kmRegistrosGraphNNitrogeno_gam <- shannon10kmRegistrosGraphNNitrogeno_gam +
+  geom_text(data = NULL, aes(label = paste("r =", round(cor(mayores_a_100m$Nitrogeno,  mayores_a_100m$shannon10kmEspecies), 2), ", p < 2.2e-16")), x = min(mayores_a_100m$Nitrogeno), y = max(mayores_a_100m$shannon10kmRegistros), hjust = 0, vjust = 1, size = 4, color = "black")
+
 
 RAFshannonRegistrosGraphNitrogeno<-ggplot(tabShaEnvirRaref_50, aes(x = Nitrogeno, y = mean_sha)) +
   geom_point()+
-  geom_smooth(method = "lm", color = "#1f77b4")+
+  geom_smooth(method = "gam", color = "#1f77b4")+
   geom_segment(aes(xend = Nitrogeno, yend = s_p5), linetype = "dotdash", color = "grey") +
   geom_segment(aes(xend = Nitrogeno, yend = s_p95), linetype = "dotdash", color = "grey") +
   
@@ -208,139 +268,194 @@ RAFshannonRegistrosGraphNitrogeno<-ggplot(tabShaEnvirRaref_50, aes(x = Nitrogeno
   theme_classic()+
   theme(axis.text= element_text(size=12), axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))
 
-#preview of figure 2
-plot_grid(shannon10kmRegistrosGraphElev,RAFshannonRegistrosGraphElev,shannon10kmRegistrosGraphOCSTHA,RAFshannonRegistrosGraphOCSTHA,shannon10kmRegistrosGraphNitro,RAFshannonRegistrosGraphNitrogeno, labels=c("a","b","c","d","e","f"), ncol=2,label_size = 15)
+fig2<-plot_grid(shannon10kmRegistrosGraphNElev10kmcell_gam,RAFshannonRegistrosGraphElev,shannon10kmRegistrosGraphNOCSTHA_gam,RAFshannonRegistrosGraphOCSTHA
+                ,shannon10kmRegistrosGraphNNitrogeno_gam,RAFshannonRegistrosGraphNitrogeno, labels=c("a","b","c","d","e","f"), ncol=2,label_size = 15)
 
-
-#Save figure 2 in a variable 
-fig2<-plot_grid(shannon10kmRegistrosGraphElev,RAFshannonRegistrosGraphElev,shannon10kmRegistrosGraphOCSTHA,RAFshannonRegistrosGraphOCSTHA,shannon10kmRegistrosGraphNitro,RAFshannonRegistrosGraphNitrogeno, labels=c("a","b","c","d","e","f"), ncol=2,label_size = 20)
 
 
 ############
 # Figure 3 #
 ############
 
-Data10kmFiltrado_4000 <-Data10kmFiltrado13_12_20%>%filter(Elev10kmcell<=4000)
-Data10kmFiltrado_200 <-Data10kmFiltrado13_12_20%>%filter(Elev10kmcell>=200)
+#  AM_ratiocell10kmGLM gam model
+modelo_AM_ratiocell10kmGLM <- gam(AM_ratiocell ~ s(Elev10kmcell), data = mayores_a_100m) 
 
-#lm; mycorrhizal types ratio ~ Elev10kmcell
+# Calculate confidence intervals for the model
+intervalos_confianza_AM_ratiocell10kmGLM <- predict(modelo_AM_ratiocell10kmGLM, type = "response", interval = "confidence", se.fit = TRUE)
+predicciones_AM_ratiocell10kmGLM <- intervalos_confianza_AM_ratiocell10kmGLM$fit
+margen_error_AM_ratiocell10kmGLM <- intervalos_confianza_AM_ratiocell10kmGLM$se.fit
+lwr_AM_ratiocell10kmGLM <- predicciones_AM_ratiocell10kmGLM - 1.96 * margen_error_AM_ratiocell10kmGLM
+upr_AM_ratiocell10kmGLM <- predicciones_AM_ratiocell10kmGLM + 1.96 * margen_error_AM_ratiocell10kmGLM
 
-AM_ratiocell10kmGLM<-glm(AM_ratiocell~ Elev10kmcell,
-                         data = mayores_a_100m, family=gaussian(link = "identity")) 
 
-EM_ratiocell10kmGLM<-glm(EM_ratiocell~ Elev10kmcell,
-                         data = mayores_a_100m, family=gaussian(link = "identity")) 
+predicciones_AM_ratiocell10kmGLM <- pmin(pmax(predicciones_AM_ratiocell10kmGLM, 0), 1)
+lwr_AM_ratiocell10kmGLM <- pmin(pmax(lwr_AM_ratiocell10kmGLM, 0), 1)
+upr_AM_ratiocell10kmGLM <- pmin(pmax(upr_AM_ratiocell10kmGLM, 0), 1)
 
-ErM_ratiocell10kmGLM<-glm(ErM_ratiocell~ Elev10kmcell,
-                          data = Data10kmFiltrado_200, family=gaussian(link = "identity")) 
-
-OM_ratiocell10kmGLM<-glm(OM_ratiocell~ Elev10kmcell,
-                         data = mayores_a_100m, family=gaussian(link = "identity")) 
-
-WanM_ratiocell10kmGLM<-glm(WanNm_ratiocell~ Elev10kmcell,
-                           data = mayores_a_100m, family=gaussian(link = "identity")) 
-
-Nfix_ratiocell10kmGLM<-glm(Nfix_ratiocell~ Elev10kmcell,
-                           data = Data10kmFiltrado_4000, family=gaussian(link = "identity")) 
-
-#Graph of mycorrhizal ratios 
-
-Nfix_ratiocell10kmGraph<-ggplot(data=Data10kmFiltrado_4000, aes(Elev10kmcell, Nfix_ratiocell))+
-  geom_point()+
-  xlim(min(mayores_a_100m$Elev10kmcell), max(4500))+
-  geom_smooth(method = "lm", color = "#1f77b4")+
-  theme_classic()+
-  theme(axis.text = element_text(size = 12), axis.title.x= element_text(color="black", size=13), axis.title.y= element_text(color="black", size=13))+
-  labs(x="Elevation", y= "Proportion of Nfixing") + 
-  stat_cor(method = "pearson",cor.coef.name=c("r"))
+# Create a dataframe with the predictions and confidence intervals
+datos_filtrados_AM_ratiocell10kmGLM <- data.frame(Elev10kmcell = mayores_a_100m$Elev10kmcell,
+                                                  predicciones = predicciones_AM_ratiocell10kmGLM,
+                                                  lwr = lwr_AM_ratiocell10kmGLM,
+                                                  upr = upr_AM_ratiocell10kmGLM)
 
 
 
-EM_ratiocell10kmGraph<-ggplot(data=mayores_a_100m, aes(Elev10kmcell, EM_ratiocell))+
-  geom_point()+
-  geom_smooth(method = "glm", color = "#1f77b4")+
-  theme_classic()+
-  theme(axis.text = element_text(size = 12),axis.title.x= element_text(color="black", size=13), axis.title.y= element_text(color="black", size=13))+
-  labs(x="Elevation", y= "Proportion of Em") + stat_cor(method = "pearson",cor.coef.name=c("r"))
-
-
-AM_ratiocell10kmGraph<-ggplot(data=mayores_a_100m, aes(Elev10kmcell, AM_ratiocell))+
-  geom_point()+
-  geom_smooth(method = "lm", color = "#1f77b4")+
-  theme_classic()+
-  theme(axis.text = element_text(size = 12),axis.title.x= element_text(color="black", size=13), axis.title.y= element_text(color="black", size=13))+
-  labs(x="Elevation", y= "Proportion of Am") + stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
-
-OM_ratiocell10kmGraph<-ggplot(data=mayores_a_100m, aes(Elev10kmcell, OM_ratiocell))+
-  geom_point()+
-  geom_smooth(method = "glm", color = "#1f77b4")+
-  theme_classic()+
-  theme(axis.text = element_text(size = 12),axis.title.x= element_text(color="black", size=13), axis.title.y= element_text(color="black", size=13))+
-  labs(x="Elevation", y= "Proportion of OM") + stat_cor(method = "pearson",cor.coef.name=c("r"))
-
-
-#AQUÍ TUVE QUE HACER EL CORTE DE DATOS PARA QUE NO QUEDE BAJO CERO EN ErM#
-
-# Filter the data for those with prediction values >= 0
-
-mayores_a_100m_filtered <- subset(mayores_a_100m, predict(lm(ErM_ratiocell ~ Elev10kmcell, mayores_a_100m)) >= 0)
-
-# Plot the filtered data and add the linear regression line
-# fit lm
-
-modelo <- lm(ErM_ratiocell ~ Elev10kmcell, data = mayores_a_100m)
-
-# Predict values for x
-
-predicciones <- predict(modelo, newdata = mayores_a_100m)
-
-# Get confidence intervals
-conf_int <- predict(modelo, newdata = mayores_a_100m, interval = "confidence")
-
-# Create a new data set with only the points where the predictions are >= 0
-datos_filtrados <- subset(mayores_a_100m, predicciones >= 0)
-
-# Filter predictions and confidence intervals for filtered data
-
-predicciones_filtradas <- predicciones[predicciones >= 0]
-conf_int_filtrado <- conf_int[predicciones >= 0, ]
-
-# Add the filtered predictions and confidence intervals to the filtered data set
-datos_filtrados <- cbind(datos_filtrados, predicciones = predicciones_filtradas, conf_int_filtrado)
-
-# Plot the data, linear regression line and confidence intervals
-
-ErM_ratiocell10kmGraph <- ggplot() +
-  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y = ErM_ratiocell)) + 
-  geom_line(data = datos_filtrados, aes(x = Elev10kmcell, y = predicciones),  color = "#1f77b4", linetype = "solid", linewidth = 1.3)+
-  geom_ribbon(data = datos_filtrados, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
+grafico_AM_ratiocell10kmGLM <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y = AM_ratiocell)) +
+  geom_line(data = datos_filtrados_AM_ratiocell10kmGLM, aes(x = Elev10kmcell, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_AM_ratiocell10kmGLM, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
   theme_classic() +
   theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
-  geom_text(data = NULL, aes(label = paste("r =", round(cor(mayores_a_100m$Elev10kmcell, mayores_a_100m$shannon10kmRegistros), 2), ", p < 2.2e-16")), x = Inf, y = Inf, hjust = 1, vjust = 1, size = 4, color = "black") + labs(x = "Elevation", y = "Proportion of ErM")
-
-print(ErM_ratiocell10kmGraph)
+  labs(x = "Elevation", y = "Proportion of Am")+ stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
 
 
+# Model for EM_ratiocell10kmGLM
+modelo_EM_ratiocell10kmGLM <- gam(EM_ratiocell ~ s(Elev10kmcell), data = mayores_a_100m) 
+
+intervalos_confianza_EM_ratiocell10kmGLM <- predict(modelo_EM_ratiocell10kmGLM, type = "response", interval = "confidence", se.fit = TRUE)
+predicciones_EM_ratiocell10kmGLM <- intervalos_confianza_EM_ratiocell10kmGLM$fit
+margen_error_EM_ratiocell10kmGLM <- intervalos_confianza_EM_ratiocell10kmGLM$se.fit
+lwr_EM_ratiocell10kmGLM <- predicciones_EM_ratiocell10kmGLM - 1.96 * margen_error_EM_ratiocell10kmGLM
+upr_EM_ratiocell10kmGLM <- predicciones_EM_ratiocell10kmGLM + 1.96 * margen_error_EM_ratiocell10kmGLM
+
+predicciones_EM_ratiocell10kmGLM <- pmin(pmax(predicciones_EM_ratiocell10kmGLM, 0), 1)
+lwr_EM_ratiocell10kmGLM <- pmin(pmax(lwr_EM_ratiocell10kmGLM, 0), 1)
+upr_EM_ratiocell10kmGLM <- pmin(pmax(upr_EM_ratiocell10kmGLM, 0), 1)
+
+datos_filtrados_EM_ratiocell10kmGLM <- data.frame(Elev10kmcell = mayores_a_100m$Elev10kmcell,
+                                                  predicciones = predicciones_EM_ratiocell10kmGLM,
+                                                  lwr = lwr_EM_ratiocell10kmGLM,
+                                                  upr = upr_EM_ratiocell10kmGLM)
 
 
 
-WanNm_ratiocell10kmGraph<-ggplot(data=mayores_a_100m, aes(Elev10kmcell, WanNm_ratiocell))+
-  geom_point()+
-  geom_smooth(method = "lm", color = "#1f77b4")+
-  theme_classic()+
-  theme(axis.text = element_text(size = 12), axis.title.x= element_text(color="black", size=13), axis.title.y= element_text(color="black", size=13))+
-  labs(x="Elevation", y= "Proportion of WanNm") + stat_cor(method = "pearson",cor.coef.name=c("r"))
-
-#Create figure 3
-
-plot_grid(AM_ratiocell10kmGraph, EM_ratiocell10kmGraph, ErM_ratiocell10kmGraph,  OM_ratiocell10kmGraph, 
-          WanNm_ratiocell10kmGraph, Nfix_ratiocell10kmGraph, labels=c("a","b","c","d","e","f"))
-
-#Save figure 3 in a variable 
+grafico_EM_ratiocell10kmGLM <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y = EM_ratiocell)) +
+  geom_line(data = datos_filtrados_EM_ratiocell10kmGLM, aes(x = Elev10kmcell, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_EM_ratiocell10kmGLM, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x = "Elevation", y = "Proportion of Em")+ stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
 
 
-grap3<-plot_grid(AM_ratiocell10kmGraph, EM_ratiocell10kmGraph, ErM_ratiocell10kmGraph,  OM_ratiocell10kmGraph, 
-                 WanNm_ratiocell10kmGraph, Nfix_ratiocell10kmGraph, labels=c("a","b","c","d","e","f"))
+# Model for ErM_ratiocell10kmGLM
+modelo_ErM_ratiocell10kmGLM <- gam(ErM_ratiocell ~ s(Elev10kmcell), data = mayores_a_100m) 
+
+intervalos_confianza_ErM_ratiocell10kmGLM <- predict(modelo_ErM_ratiocell10kmGLM, type = "response", interval = "confidence", se.fit = TRUE)
+predicciones_ErM_ratiocell10kmGLM <- intervalos_confianza_ErM_ratiocell10kmGLM$fit
+margen_error_ErM_ratiocell10kmGLM <- intervalos_confianza_ErM_ratiocell10kmGLM$se.fit
+lwr_ErM_ratiocell10kmGLM <- predicciones_ErM_ratiocell10kmGLM - 1.96 * margen_error_ErM_ratiocell10kmGLM
+upr_ErM_ratiocell10kmGLM <- predicciones_ErM_ratiocell10kmGLM + 1.96 * margen_error_ErM_ratiocell10kmGLM
+
+predicciones_ErM_ratiocell10kmGLM <- pmin(pmax(predicciones_ErM_ratiocell10kmGLM, 0), 1)
+lwr_ErM_ratiocell10kmGLM <- pmin(pmax(lwr_ErM_ratiocell10kmGLM, 0), 1)
+upr_ErM_ratiocell10kmGLM <- pmin(pmax(upr_ErM_ratiocell10kmGLM, 0), 1)
+
+datos_filtrados_ErM_ratiocell10kmGLM <- data.frame(Elev10kmcell = mayores_a_100m$Elev10kmcell,
+                                                   predicciones = predicciones_ErM_ratiocell10kmGLM,
+                                                   lwr = lwr_ErM_ratiocell10kmGLM,
+                                                   upr = upr_ErM_ratiocell10kmGLM)
+
+
+
+grafico_ErM_ratiocell10kmGLM <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y = ErM_ratiocell)) +
+  geom_line(data = datos_filtrados_ErM_ratiocell10kmGLM, aes(x = Elev10kmcell, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_ErM_ratiocell10kmGLM, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x = "Elevation", y = "Proportion of Erm")+ stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
+
+
+# Model for OM_ratiocell10kmGLM
+modelo_OM_ratiocell10kmGLM <- gam(OM_ratiocell ~ s(Elev10kmcell), data = mayores_a_100m) 
+
+intervalos_confianza_OM_ratiocell10kmGLM <- predict(modelo_OM_ratiocell10kmGLM, type = "response", interval = "confidence", se.fit = TRUE)
+predicciones_OM_ratiocell10kmGLM <- intervalos_confianza_OM_ratiocell10kmGLM$fit
+margen_error_OM_ratiocell10kmGLM <- intervalos_confianza_OM_ratiocell10kmGLM$se.fit
+lwr_OM_ratiocell10kmGLM <- predicciones_OM_ratiocell10kmGLM - 1.96 * margen_error_OM_ratiocell10kmGLM
+upr_OM_ratiocell10kmGLM <- predicciones_OM_ratiocell10kmGLM + 1.96 * margen_error_OM_ratiocell10kmGLM
+
+predicciones_OM_ratiocell10kmGLM <- pmin(pmax(predicciones_OM_ratiocell10kmGLM, 0), 1)
+lwr_OM_ratiocell10kmGLM <- pmin(pmax(lwr_OM_ratiocell10kmGLM, 0), 1)
+upr_OM_ratiocell10kmGLM <- pmin(pmax(upr_OM_ratiocell10kmGLM, 0), 1)
+
+datos_filtrados_OM_ratiocell10kmGLM <- data.frame(Elev10kmcell = mayores_a_100m$Elev10kmcell,
+                                                  predicciones = predicciones_OM_ratiocell10kmGLM,
+                                                  lwr = lwr_OM_ratiocell10kmGLM,
+                                                  upr = upr_OM_ratiocell10kmGLM)
+
+
+
+grafico_OM_ratiocell10kmGLM <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y = OM_ratiocell)) +
+  geom_line(data = datos_filtrados_OM_ratiocell10kmGLM, aes(x = Elev10kmcell, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_OM_ratiocell10kmGLM, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x = "Elevation", y = "Proportion of Om")+ stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
+
+
+# Modelo for  WanNm_ratiocell10kmGLM
+modelo_WanNm_ratiocell10kmGLM <- gam(WanNm_ratiocell ~ s(Elev10kmcell), data = mayores_a_100m) 
+
+intervalos_confianza_WanNm_ratiocell10kmGLM <- predict(modelo_WanNm_ratiocell10kmGLM, type = "response", interval = "confidence", se.fit = TRUE)
+predicciones_WanNm_ratiocell10kmGLM <- intervalos_confianza_WanNm_ratiocell10kmGLM$fit
+margen_error_WanNm_ratiocell10kmGLM <- intervalos_confianza_WanNm_ratiocell10kmGLM$se.fit
+lwr_WanNm_ratiocell10kmGLM <- predicciones_WanNm_ratiocell10kmGLM - 1.96 * margen_error_WanNm_ratiocell10kmGLM
+upr_WanNm_ratiocell10kmGLM <- predicciones_WanNm_ratiocell10kmGLM + 1.96 * margen_error_WanNm_ratiocell10kmGLM
+
+predicciones_WanNm_ratiocell10kmGLM <- pmin(pmax(predicciones_WanNm_ratiocell10kmGLM, 0), 1)
+lwr_WanNm_ratiocell10kmGLM <- pmin(pmax(lwr_WanNm_ratiocell10kmGLM, 0), 1)
+upr_WanNm_ratiocell10kmGLM <- pmin(pmax(upr_WanNm_ratiocell10kmGLM, 0), 1)
+
+datos_filtrados_WanNm_ratiocell10kmGLM <- data.frame(Elev10kmcell = mayores_a_100m$Elev10kmcell,
+                                                     predicciones = predicciones_WanNm_ratiocell10kmGLM,
+                                                     lwr = lwr_WanNm_ratiocell10kmGLM,
+                                                     upr = upr_WanNm_ratiocell10kmGLM)
+
+
+
+grafico_WanNm_ratiocell10kmGLM <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y =  WanNm_ratiocell)) +
+  geom_line(data = datos_filtrados_WanNm_ratiocell10kmGLM, aes(x = Elev10kmcell, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_WanNm_ratiocell10kmGLM, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x = "Elevation", y = "Proportion of WanNm")+ stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
+
+
+
+# Model for  Nfix_ratiocell10kmGLM
+modelo_Nfix_ratiocell10kmGLM <- gam( Nfix_ratiocell ~ s(Elev10kmcell), data = mayores_a_100m) 
+
+intervalos_confianza_Nfix_ratiocell10kmGLM <- predict(modelo_Nfix_ratiocell10kmGLM, type = "response", interval = "confidence", se.fit = TRUE)
+predicciones_Nfix_ratiocell10kmGLM <- intervalos_confianza_Nfix_ratiocell10kmGLM$fit
+margen_error_Nfix_ratiocell10kmGLM <- intervalos_confianza_Nfix_ratiocell10kmGLM$se.fit
+lwr_Nfix_ratiocell10kmGLM <- predicciones_Nfix_ratiocell10kmGLM - 1.96 * margen_error_Nfix_ratiocell10kmGLM
+upr_Nfix_ratiocell10kmGLM <- predicciones_Nfix_ratiocell10kmGLM + 1.96 * margen_error_Nfix_ratiocell10kmGLM
+
+predicciones_Nfix_ratiocell10kmGLM <- pmin(pmax(predicciones_Nfix_ratiocell10kmGLM, 0), 1)
+lwr_Nfix_ratiocell10kmGLM <- pmin(pmax(lwr_Nfix_ratiocell10kmGLM, 0), 1)
+upr_Nfix_ratiocell10kmGLM <- pmin(pmax(upr_Nfix_ratiocell10kmGLM, 0), 1)
+
+datos_filtrados_Nfix_ratiocell10kmGLM <- data.frame(Elev10kmcell = mayores_a_100m$Elev10kmcell,
+                                                    predicciones = predicciones_Nfix_ratiocell10kmGLM,
+                                                    lwr = lwr_Nfix_ratiocell10kmGLM,
+                                                    upr = upr_Nfix_ratiocell10kmGLM)
+
+
+
+grafico_Nfix_ratiocell10kmGLM <- ggplot() +
+  geom_point(data = mayores_a_100m, aes(x = Elev10kmcell, y =  Nfix_ratiocell)) +
+  geom_line(data = datos_filtrados_Nfix_ratiocell10kmGLM, aes(x = Elev10kmcell, y = predicciones), color = "#1f77b4", linetype = "solid", size = 1.3) +
+  geom_ribbon(data = datos_filtrados_Nfix_ratiocell10kmGLM, aes(x = Elev10kmcell, ymin = lwr, ymax = upr), fill = "lightgrey", alpha = 0.5) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
+  labs(x = "Elevation", y = "Proportion of Nfix")+ stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
+
+grap3<-plot_grid(grafico_AM_ratiocell10kmGLM, grafico_EM_ratiocell10kmGLM, grafico_ErM_ratiocell10kmGLM,  grafico_OM_ratiocell10kmGLM, 
+                 grafico_WanNm_ratiocell10kmGLM, grafico_Nfix_ratiocell10kmGLM, labels=c("a","b","c","d","e","f"))
 
 
 #############
