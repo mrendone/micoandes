@@ -73,9 +73,9 @@ Modelo_C <- c("Model 1: shannonCarbonoGLM",
 
 # Calculating root mean square error (RMSE)
 require(Metrics)
-Rmse_ShannonCarbono <- c(rmse(Data10kmFiltrado13_12_20$shannon10kmRegistros, predict(shannonCarbonoGLMFINAL)),
-                         rmse(Data10kmFiltrado13_12_20$shannon10kmRegistros, predict(shannonCarbonoGLM_cuadradoAIC)),
-                         rmse(Data10kmFiltrado13_12_20$shannon10kmRegistros, predict(shannonCarbonoGLM_cuadrado2AIC)))
+Rmse_ShannonCarbono <- c(rmse(Data10kmFiltrado_101$shannon10kmRegistros, predict(shannonCarbonoGLMFINAL)),
+                         rmse(Data10kmFiltrado_101$shannon10kmRegistros, predict(shannonCarbonoGLM_cuadradoAIC)),
+                         rmse(Data10kmFiltrado_101$shannon10kmRegistros, predict(shannonCarbonoGLM_cuadrado2AIC)))
 
 # Collecting variable names for each model
 Variables_C_AIC <- c(N_glmC, N_glmcuadraC, N_glmcuadra2C)
@@ -102,13 +102,13 @@ library(car)
 library(gtsummary)
 
 # Adjusting AM_ratiocell values for perfect overlap
-Data10kmFiltrado13_12_20$AM_ratiocell <- replace(Data10kmFiltrado13_12_20$AM_ratiocell, 
-                                             Data10kmFiltrado13_12_20$AM_ratiocell == 1, 
-                                             Data10kmFiltrado13_12_20$AM_ratiocell[Data10kmFiltrado13_12_20$AM_ratiocell == 1] - 0.00001)
+Data10kmFiltrado_101$AM_ratiocell <- replace(Data10kmFiltrado_101$AM_ratiocell, 
+                                             Data10kmFiltrado_101$AM_ratiocell == 1, 
+                                             Data10kmFiltrado_101$AM_ratiocell[Data10kmFiltrado_101$AM_ratiocell == 1] - 0.00001)
 
 # GLM Model for AM_ratiocell with Nitrogen
 Modelo_final_AM_ratiocellNitrogenoGLM_AIC <- glm(AM_ratiocell ~ BIO1 + BIO12 + Nitrogeno,
-                                                 data = Data10kmFiltrado13_12_20, 
+                                                 data = Data10kmFiltrado_101, 
                                                  family = gaussian(link = "identity")) 
 
 
@@ -122,32 +122,32 @@ Modelo_final_AM_ratiocellCarbonoZIB<-glmmTMB(AM_ratiocell ~ BIO1 + BIO12_log  + 
                                              data = Data10kmFiltrado_101)
 
 # Boxplots to visualize outliers
-boxplot(Data10kmFiltrado13_12_20$BIO1, main = "BIO1")
-boxplot(Data10kmFiltrado13_12_20$BIO12, main = "BIO12")
-boxplot(Data10kmFiltrado13_12_20$AWCh1, main = "AWCh1")
-boxplot(Data10kmFiltrado13_12_20$PHIHOX, main = "PHIHOX")
-boxplot(Data10kmFiltrado13_12_20$Nitrogeno, main = "Nitrogeno")
+boxplot(Data10kmFiltrado_101$BIO1, main = "BIO1")
+boxplot(Data10kmFiltrado_101$BIO12, main = "BIO12")
+boxplot(Data10kmFiltrado_101$AWCh1, main = "AWCh1")
+boxplot(Data10kmFiltrado_101$PHIHOX, main = "PHIHOX")
+boxplot(Data10kmFiltrado_101$Nitrogeno, main = "Nitrogeno")
 
 # Detecting outliers
-BIO12_outliers <- boxplot.stats(Data10kmFiltrado13_12_20$BIO12)$out
-PHIHOX_outliers <- boxplot.stats(Data10kmFiltrado13_12_20$PHIHOX)$out
-Nitrogeno_outliers <- boxplot.stats(Data10kmFiltrado13_12_20$Nitrogeno)$out
+BIO12_outliers <- boxplot.stats(Data10kmFiltrado_101$BIO12)$out
+PHIHOX_outliers <- boxplot.stats(Data10kmFiltrado_101$PHIHOX)$out
+Nitrogeno_outliers <- boxplot.stats(Data10kmFiltrado_101$Nitrogeno)$out
 
 # Log-transforming variables
-Data10kmFiltrado13_12_20$BIO12_log <- log(Data10kmFiltrado13_12_20$BIO12)
-Data10kmFiltrado13_12_20$PHIHOX_log <- log(Data10kmFiltrado13_12_20$PHIHOX)
-Data10kmFiltrado13_12_20$Nitrogeno_log <- log(Data10kmFiltrado13_12_20$Nitrogeno)
+Data10kmFiltrado_101$BIO12_log <- log(Data10kmFiltrado_101$BIO12)
+Data10kmFiltrado_101$PHIHOX_log <- log(Data10kmFiltrado_101$PHIHOX)
+Data10kmFiltrado_101$Nitrogeno_log <- log(Data10kmFiltrado_101$Nitrogeno)
 
 # ZIB Model for AM_ratiocell with Nitrogen (including zero-inflation)
 Modelo_final_AM_ratiocellNitrogenoZIB_AIC <- glmmTMB(AM_ratiocell ~ BIO1 + BIO12_log + Nitrogeno_log,
                                                      ziformula = ~1, 
                                                      family = beta_family(), 
-                                                     data = Data10kmFiltrado13_12_20)
+                                                     data = Data10kmFiltrado_101)
 
 # ZIB Model for AM_ratiocell with Nitrogen (without zero-inflation)
 Modelo_final_AM_ratiocellNitrogenoB_AIC <- glmmTMB(AM_ratiocell ~ BIO1 + BIO12_log + Nitrogeno_log,
                                                    family = beta_family(), 
-                                                   data = Data10kmFiltrado13_12_20)
+                                                   data = Data10kmFiltrado_101)
 
 # Defining and fitting the GLM model for nitrogen
 shannonNitrogenoGLM <- glm(shannon10kmRegistros ~ BIO1 + BIO12 + Nitrogeno,
@@ -177,14 +177,14 @@ print(standardized.coefficientsCarbono)
 
 ## GLM Model for Nitrogen Proportion of EcM
 Modelo_Final_EM_ratiocell_NitrogenoGLM <- glm(EM_ratiocell ~ BIO1 + BIO12 + Nitrogeno,
-                                              data = Data10kmFiltrado13_12_20,
+                                              data = Data10kmFiltrado_101,
                                               family = gaussian(link = "identity"))
 
 ## ZIB Model for Nitrogen Proportion of EcM
 Modelo_Final_EM_ratiocell_NitrogenoZIB <- glmmTMB(EM_ratiocell ~ BIO1 + BIO12_log + Nitrogeno_log,
                                                   ziformula = ~1,
                                                   family = beta_family(),
-                                                  data = Data10kmFiltrado13_12_20)
+                                                  data = Data10kmFiltrado_101)
 
 ### Model Comparison Using AIC
 aic_EM_ratiocell_NitrogenoGLM <- AIC(Modelo_Final_EM_ratiocell_NitrogenoGLM)
@@ -198,14 +198,14 @@ print(paste("AIC EM_ratiocell Nitrogeno ZIB: ", aic_EM_ratiocell_NitrogenoZIB))
 
 ## GLM Model for Carbon Proportion of EcM
 Modelo_final_EM_ratiocell_CarbonoGLM <- glm(EM_ratiocell ~ BIO1 + BIO12 + OCSTHA,
-                                            data = Data10kmFiltrado13_12_20,
+                                            data = Data10kmFiltrado_101,
                                             family = gaussian(link = "identity"))
 
 ## ZIB Model for Carbon Proportion of EcM
 Modelo_final_EM_ratiocell_CarbonoZIB <- glmmTMB(EM_ratiocell ~ BIO1 + BIO12_log + OCSTHA,
                                                 ziformula = ~1,
                                                 family = beta_family(),
-                                                data = Data10kmFiltrado13_12_20)
+                                                data = Data10kmFiltrado_101)
 
 ### Model Comparison Using AIC
 aic_EM_ratiocell_CarbonoGLM <- AIC(Modelo_final_EM_ratiocell_CarbonoGLM)
@@ -219,14 +219,14 @@ print(paste("AIC EM_ratiocell Carbono ZIB: ", aic_EM_ratiocell_CarbonoGLMZIB))
 
 ## GLM Model for Nitrogen Proportion of ErM
 Modelo_Final_ErM_ratiocell_NitrogenoGLM <- glm(ErM_ratiocell ~ BIO1 + BIO12 + Nitrogeno,
-                                               data = Data10kmFiltrado13_12_20,
+                                               data = Data10kmFiltrado_101,
                                                family = gaussian(link = "identity"))
 
 ## ZIB Model for Nitrogen Proportion of ErM
 Modelo_Final_ErM_ratiocell_NitrogenoZIB <- glmmTMB(ErM_ratiocell ~ BIO1 + BIO12_log + Nitrogeno_log,
                                                    ziformula = ~1,
                                                    family = beta_family(),
-                                                   data = Data10kmFiltrado13_12_20)
+                                                   data = Data10kmFiltrado_101)
 
 ### Model Comparison Using AIC
 aic_ErM_ratiocell_NitrogenoGLM <- AIC(Modelo_Final_ErM_ratiocell_NitrogenoGLM)
@@ -238,14 +238,14 @@ print(paste("AIC ErM_ratiocell Nitrogeno ZIB: ", aic_ErM_ratiocell_NitrogenoZIB)
 
 ## GLM Model for Carbon Proportion of ErM
 Modelo_Final_ErM_ratiocell_CarbonoGLM <- glm(ErM_ratiocell ~ BIO1 + BIO12 + OCSTHA,
-                                             data = Data10kmFiltrado13_12_20,
+                                             data = Data10kmFiltrado_101,
                                              family = gaussian(link = "identity"))
 
 ## ZIB Model for Carbon Proportion of ErM
 Modelo_Final_ErM_ratiocell_CarbonoZIB <- glmmTMB(ErM_ratiocell ~ BIO1 + BIO12_log + OCSTHA,
                                                  ziformula = ~1,
                                                  family = beta_family(),
-                                                 data = Data10kmFiltrado13_12_20)
+                                                 data = Data10kmFiltrado_101)
 
 ### Model Comparison Using AIC
 aic_ErM_ratiocell_CarbonoGLM <- AIC(Modelo_Final_ErM_ratiocell_CarbonoGLM)
@@ -259,14 +259,14 @@ print(paste("AIC ErM_ratiocell Carbono ZIB: ", aic_ErM_ratiocell_CarbonoZIB))
 
 ## GLM Model for Nitrogen Proportion of OM
 Modelo_Final_OM_ratiocell_NitrogenoGLM <- glm(OM_ratiocell ~ BIO1 + BIO12 + Nitrogeno,
-                                              data = Data10kmFiltrado13_12_20,
+                                              data = Data10kmFiltrado_101,
                                               family = gaussian(link = "identity"))
 
 ## ZIB Model for Nitrogen Proportion of OM
 Modelo_Final_OM_ratiocell_NitrogenoZIB <- glmmTMB(OM_ratiocell ~ BIO1 + BIO12_log + Nitrogeno_log,
                                                   ziformula = ~1,
                                                   family = beta_family(),
-                                                  data = Data10kmFiltrado13_12_20)
+                                                  data = Data10kmFiltrado_101)
 
 
 
@@ -470,3 +470,23 @@ resultados_Carbono<-cbind(Modelos_Carbono, Rmse_Carbono)
 View(resultados_Nitrogeno)
 View(resultados_Carbono)
 
+
+
+### Small test (to remove later)
+
+
+predShannon<-predict(shannonCarbonoGLMFINAL)
+elev<-mayores_a_100m$Elev10kmcell
+
+cut_elev<-cut(elev,breaks = seq(100,4600,by=200))
+boxplot(predShannon~cut_elev)
+predShannon<-predict(shannonNitrogenoGLM)
+boxplot(predShannon~cut_elev)
+
+
+
+plot(mayores_a_100m$Nitrogeno~mayores_a_100m$Elev10kmcell)
+plot(mayores_a_100m$OCSTHA~mayores_a_100m$Elev10kmcell)
+plot(mayores_a_100m$shannon10kmEspecies~mayores_a_100m$Elev10kmcell)
+
+plot(predShannon~mayores_a_100m$Elev10kmcell)
