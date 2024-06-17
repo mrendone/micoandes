@@ -9,7 +9,6 @@ library(dplyr)
 library(readxl)
 
 
-#Data10kmFiltrado13_12_20 <- read_excel("insumos/Data10kmFiltrado13_12_20.xlsx")
 Data10kmFiltrado13_12_20 <- readRDS("Data/data10kmFiltrado_13_12_20.rds")
 
 Data10kmFiltrado13_12_20<- Data10kmFiltrado13_12_20 %>% rename(id="IDceldas10km.IDcelda10km")
@@ -32,16 +31,10 @@ library(ggspatial)
 library(sf)
 
 
-#andes<-st_read("insumos/Andes.shp")
-#andes<-as(andes, "Spatial")
 andes<-readRDS("Data/andes.rds")
 
-#Colombia<-st_read("insumos/Colombia.shp")
-#Colombia<-as(Colombia, "Spatial")
 Colombia<-readRDS("Data/Colombia.rds")
 
-#spat_mico<-st_read("insumos/Spat_mico.shp")
-#spat_mico<-as(spat_mico,"Spatial")
 spat_mico<-readRDS("Data/spat_mico.rds")
 
 ColomabiaNew<-raster::bind(andes, Colombia) 
