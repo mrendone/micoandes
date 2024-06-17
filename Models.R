@@ -354,7 +354,7 @@ aic_Nfix_ratiocell_CarbonoZIB <- AIC(Modelo_Final_Nfix_ratiocell_OCSTHAZIB)
 print(paste("AIC Nfix_ratiocell Carbono GLM: ", aic_Nfix_ratiocell_CarbonoGLM))
 print(paste("AIC Nfix_ratiocell Carbono ZIB: ", aic_Nfix_ratiocell_CarbonoZIB))
 
-#Effect size proporción micorrizas
+# Coefficientes de los modelos de proporción micorrizas
 
 library(QuantPsyc)
 
