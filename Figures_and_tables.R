@@ -115,23 +115,6 @@ Elev_C
 ############
 
 
-#command is reading a CSV file named “tabShaEnvirRaref_50.csv” that is a rarefiated data to 50 samples per cell
-
-tabShaEnvirRaref_50<-read.csv("insumos/tabShaEnvirRaref_50.csv")
-
-#Here it is extracting the row names from the dataframe tabShaEnvirRaref_50 and storing them in a variable called index
-
-index<-row.names(tabShaEnvirRaref_50)
-tabShaEnvirRaref_50$id<-as.numeric(index)
-
-#Here it is selecting columns 1 and 53 from the dataframe Data10kmFiltrado13_12_20 and storing them in a variable called nitro
-id_nitro<-which(Data10kmFiltrado13_12_20$id==tabShaEnvirRaref_50$X)
-
-nitro<-subset(Data10kmFiltrado13_12_20, id %in% c(tabShaEnvirRaref_50$X))
-
-#This command is performing an “inner join” of the dataframes tabShaEnvirRaref_50 and nitro based on the id column. The result is stored back in tabShaEnvirRaref_50.
-
-tabShaEnvirRaref_50<-data.frame(tabShaEnvirRaref_50,nitro)
 #Shannon graph and shannon rarefied graphs  vs elevation and Carbon stock
 
 modelo_gamElev10kmcell <- gam(shannon10kmRegistros ~ s(Elev10kmcell, bs = "cs"), data = mayores_a_100m)
@@ -171,20 +154,6 @@ shannon10kmRegistrosGraphNElev10kmcell_gam <- ggplot() +
 
 
 
-
-RAFshannonRegistrosGraphElev<-ggplot(tabShaEnvirRaref_50, aes(x = Elev10kmcell, y = mean_sha)) +
-  geom_point()+
-  geom_smooth( color = "#1f77b4")+
-  geom_segment(aes(xend = Elev10kmcell, yend = s_p5), linetype = "dotdash", color = "grey") +
-  geom_segment(aes(xend = Elev10kmcell, yend = s_p95), linetype = "dotdash", color = "grey") +
-  
-  geom_point(color = "black", size = 0.75)+ stat_cor(method = "pearson",cor.coef.name=c("r")) + labs(x="Elevation", y= "Diversity of types of mycorrhizal associations")+
-  theme_classic()+
-  theme(plot.title = element_text(hjust = 0.5, size = 20),axis.text= element_text(size=12), axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))+
-  ggtitle("Rarefied Data")
-
-
-
 ####################   gam model for Carbon 
 
 modelo_gamOCSTHA <- gam(shannon10kmRegistros ~ s(OCSTHA, bs = "cs"), data = mayores_a_100m)
@@ -217,15 +186,6 @@ shannon10kmRegistrosGraphNOCSTHA_gam <- shannon10kmRegistrosGraphNOCSTHA_gam +
   geom_text(data = NULL, aes(label = paste("r =", round(cor(mayores_a_100m$OCSTHA,  mayores_a_100m$shannon10kmEspecies), 2), ", p < 2.2e-16")), x = min(mayores_a_100m$OCSTHA), y = max(mayores_a_100m$shannon10kmRegistros), hjust = 0, vjust = 1, size = 4, color = "black")
 
 
-RAFshannonRegistrosGraphOCSTHA<-ggplot(tabShaEnvirRaref_50, aes(x = OCSTHA, y = mean_sha)) +
-  geom_point()+
-  geom_smooth(color = "#1f77b4")+
-  geom_segment(aes(xend = OCSTHA, yend = s_p5), linetype = "dotdash", color = "grey") +
-  geom_segment(aes(xend = OCSTHA, yend = s_p95), linetype = "dotdash", color = "grey") +
-  
-  geom_point(color = "black", size = 0.75)+ stat_cor(method = "pearson",cor.coef.name=c("r")) + labs(x="Soil organic carbon stock (ton/ha)", y= "Diversity of types of mycorrhizal associations")+
-  theme_classic()+
-  theme(axis.text= element_text(size=12), axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))
 
 ####################  gam model for Nitrogen
 
@@ -258,20 +218,6 @@ theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "
 # Agregar coeficiente de correlación de Pearson y valor p
 shannon10kmRegistrosGraphNNitrogeno_gam <- shannon10kmRegistrosGraphNNitrogeno_gam +
   geom_text(data = NULL, aes(label = paste("r =", round(cor(mayores_a_100m$Nitrogeno,  mayores_a_100m$shannon10kmEspecies), 2), ", p < 2.2e-16")), x = min(mayores_a_100m$Nitrogeno), y = max(mayores_a_100m$shannon10kmRegistros), hjust = 0, vjust = 1, size = 4, color = "black")
-
-
-RAFshannonRegistrosGraphNitrogeno<-ggplot(tabShaEnvirRaref_50, aes(x = Nitrogeno, y = mean_sha)) +
-  geom_point()+
-  geom_smooth(method = "gam", color = "#1f77b4")+
-  geom_segment(aes(xend = Nitrogeno, yend = s_p5), linetype = "dotdash", color = "grey") +
-  geom_segment(aes(xend = Nitrogeno, yend = s_p95), linetype = "dotdash", color = "grey") +
-  
-  geom_point(color = "black", size = 0.75)+ stat_cor(method = "pearson",cor.coef.name=c("r")) + labs(x="Total Nitrogeno in soil (cg/kg)", y= "Diversity of types of mycorrhizal associations")+
-  theme_classic()+
-  theme(axis.text= element_text(size=12), axis.title.x= element_text(color="black", size=15), axis.title.y= element_text(color="black", size=15))
-
-fig2<-plot_grid(shannon10kmRegistrosGraphNElev10kmcell_gam,RAFshannonRegistrosGraphElev,shannon10kmRegistrosGraphNOCSTHA_gam,RAFshannonRegistrosGraphOCSTHA
-                ,shannon10kmRegistrosGraphNNitrogeno_gam,RAFshannonRegistrosGraphNitrogeno, labels=c("a","b","c","d","e","f"), ncol=2,label_size = 15)
 
 
 
