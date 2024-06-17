@@ -4,7 +4,6 @@
 
 library(Metrics)
 library(readxl)
-#Data10kmFiltrado13_12_20 <-read_excel("../insumos/Data10kmFiltrado13_12_20.xlsx")
 Data10kmFiltrado13_12_20<-readRDS("Data/data10kmFiltrado_13_12_20.rds")
 library(dplyr)
 mayores_a_100m<-Data10kmFiltrado13_12_20 %>% filter(Elev10kmcell>100)
