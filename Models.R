@@ -361,53 +361,60 @@ print(paste("AIC Nfix_ratiocell Carbono ZIB: ", aic_Nfix_ratiocell_CarbonoZIB))
 
 library(effectsize)
 
+# Calculate effect sizes for Shannon index (NitrogenoGLM and CarbonoGLMFINAL)
+effectShannonNitro <- effectsize(shannonNitrogenoGLM)
+effectShannonCarbono <- effectsize(shannonCarbonoGLMFINAL)
 
-effectShannonNitro<- effectsize(shannonNitrogenoGLM)
-effectShannonCarbono<- effectsize(shannonCarbonoGLMFINAL)
-
-
-print(effectShannonNitro) 
+# Print effect sizes for Shannon index
+print(effectShannonNitro)
 print(effectShannonCarbono)
 
-#Nfix
+# Calculate effect sizes for Nfix (NitrogenoGLM and OCSTHAGLM)
+effectNfixNitrogeno <- effectsize(Modelo_Final_Nfix_ratiocell_NitrogenoGLM)
+effectNfixCarbono <- effectsize(Modelo_Final_Nfix_ratiocell_OCSTHAGLM)
 
-effectNfixNitrogeno<-effectsize(Modelo_Final_Nfix_ratiocell_NitrogenoGLM)
-effectNfixCarbono<-effectsize(Modelo_Final_Nfix_ratiocell_OCSTHAGLM)
-print(effectNfixNitrogeno) 
+# Print effect sizes for Nfix
+print(effectNfixNitrogeno)
 print(effectNfixCarbono)
 
-#arb
+# Calculate effect sizes for arb (Arbuscular mycorrhizal fungi)
+effectAMNitrogeno <- effectsize(Modelo_final_AM_ratiocellNitrogenoGLM_AIC)
+effectAMCarbono <- effectsize(Modelo_final_AM_ratiocellNitrogenoGLM_AIC)
 
-effectAMNitrogeno<-effectsize(Modelo_final_AM_ratiocellNitrogenoGLM_AIC)
-effectAMCarbono<-effectsize(Modelo_final_AM_ratiocellNitrogenoGLM_AIC)
-print(effectAMNitrogeno) 
+# Print effect sizes for arb
+print(effectAMNitrogeno)
 print(effectAMCarbono)
 
+# Calculate effect sizes for Ecto (Ectomycorrhizal fungi)
+effectEctoNitrogeno <- effectsize(Modelo_Final_EM_ratiocell_NitrogenoGLM)
+effectEctoCarbono <- effectsize(Modelo_final_EM_ratiocell_CarbonoGLM)
 
-#Ecto
-
-effectEctoNitrogeno<-effectsize(Modelo_Final_EM_ratiocell_NitrogenoGLM)
-effectEctoCarbono<-effectsize(Modelo_final_EM_ratiocell_CarbonoGLM)
-print(effectEctoNitrogeno) 
+# Print effect sizes for Ecto
+print(effectEctoNitrogeno)
 print(effectEctoCarbono)
 
-#Ericoide
-effectErNitrogeno<-effectsize(Modelo_Final_ErM_ratiocell_NitrogenoGLM)
-effectErCarbono<-effectsize(Modelo_Final_ErM_ratiocell_CarbonoGLM)
-print(effectErNitrogeno) 
+# Calculate effect sizes for Ericoide (Ericoid mycorrhizal fungi)
+effectErNitrogeno <- effectsize(Modelo_Final_ErM_ratiocell_NitrogenoGLM)
+effectErCarbono <- effectsize(Modelo_Final_ErM_ratiocell_CarbonoGLM)
+
+# Print effect sizes for Ericoide
+print(effectErNitrogeno)
 print(effectErCarbono)
 
-#OM 
-effectOMNitrogeno<-effectsize(Modelo_Final_OM_ratiocell_NitrogenoGLM)
-effectOMCarbono<-effectsize(Modelo_Final_OM_ratiocell_CarbonoGLM)
-print(effectOMNitrogeno) 
+# Calculate effect sizes for OM (Orchid mycorrhizal fungi)
+effectOMNitrogeno <- effectsize(Modelo_Final_OM_ratiocell_NitrogenoGLM)
+effectOMCarbono <- effectsize(Modelo_Final_OM_ratiocell_CarbonoGLM)
+
+# Print effect sizes for OM
+print(effectOMNitrogeno)
 print(effectOMCarbono)
 
-#WaNMN
+# Calculate effect sizes for WanNMN (Wan's nitrogen-fixing mycorrhizal fungi)
+effectWanNMNitrogeno <- effectsize(Modelo_Final_WanNm_ratiocell_NitrogenoGLM)
+effectWanNMCarbono <- effectsize(Modelo_Final_WanNm_ratiocell_CarbonoGLM)
 
-effectWanNMNitrogeno<-effectsize(Modelo_Final_WanNm_ratiocell_NitrogenoGLM)
-effectWanNMCarbono<-effectsize(Modelo_Final_WanNm_ratiocell_CarbonoGLM)
-print(effectWanNMNitrogeno) 
+# Print effect sizes for WanNMN
+print(effectWanNMNitrogeno)
 print(effectWanNMCarbono)
 
 

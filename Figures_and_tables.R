@@ -395,8 +395,8 @@ grafico_Nfix_ratiocell10kmGLM <- ggplot() +
   theme(axis.text = element_text(size = 12), axis.title.x = element_text(color = "black", size = 13), axis.title.y = element_text(color = "black", size = 13)) +
   labs(x = "Elevation", y = "Proportion of Nfix")+ stat_cor(method = "pearson",cor.coef.name=c("r"),label.x =1000 , label.y = 0.25)
 
-grap3<-plot_grid(grafico_AM_ratiocell10kmGLM, grafico_EM_ratiocell10kmGLM, grafico_ErM_ratiocell10kmGLM,  grafico_OM_ratiocell10kmGLM, 
-                 grafico_WanNm_ratiocell10kmGLM, grafico_Nfix_ratiocell10kmGLM, labels=c("a","b","c","d","e","f"))
+grap3<-plot_grid(list(grafico_AM_ratiocell10kmGLM, grafico_EM_ratiocell10kmGLM, grafico_ErM_ratiocell10kmGLM,  grafico_OM_ratiocell10kmGLM, 
+                 grafico_WanNm_ratiocell10kmGLM, grafico_Nfix_ratiocell10kmGLM), tags=c("a","b","c","d","e","f"))
 
 
 #############
@@ -601,14 +601,14 @@ library(vegan)
 
 #Load spatial inputs
 
-andes<-st_read("./insumos/Andes.shp")
-andes<-as(andes, "Spatial")
+#andes<-st_read("./insumos/Andes.shp")
+#andes<-as(andes, "Spatial")
 
-Colombia<-st_read("./insumos/Colombia.shp")
-Colombia<-as(Colombia, "Spatial")
+#Colombia<-st_read("./insumos/Colombia.shp")
+#Colombia<-as(Colombia, "Spatial")
 
-spat_mico<-st_read("./insumos/Spat_mico.shp")
-spat_mico<-as(spat_mico,"Spatial")
+#spat_mico<-st_read("./insumos/Spat_mico.shp")
+#spat_mico<-as(spat_mico,"Spatial")
 
 
 # 
