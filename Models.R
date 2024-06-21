@@ -354,7 +354,64 @@ aic_Nfix_ratiocell_CarbonoZIB <- AIC(Modelo_Final_Nfix_ratiocell_OCSTHAZIB)
 print(paste("AIC Nfix_ratiocell Carbono GLM: ", aic_Nfix_ratiocell_CarbonoGLM))
 print(paste("AIC Nfix_ratiocell Carbono ZIB: ", aic_Nfix_ratiocell_CarbonoZIB))
 
-#Effect size proporción micorrizas
+
+#######################################
+#  Effect size proporción micorrizas  #
+#######################################
+
+library(effectsize)
+
+
+effectShannonNitro<- effectsize(shannonNitrogenoGLM)
+effectShannonCarbono<- effectsize(shannonCarbonoGLMFINAL)
+
+
+print(effectShannonNitro) 
+print(effectShannonCarbono)
+
+#Nfix
+
+effectNfixNitrogeno<-effectsize(Modelo_Final_Nfix_ratiocell_NitrogenoGLM)
+effectNfixCarbono<-effectsize(Modelo_Final_Nfix_ratiocell_OCSTHAGLM)
+print(effectNfixNitrogeno) 
+print(effectNfixCarbono)
+
+#arb
+
+effectAMNitrogeno<-effectsize(Modelo_final_AM_ratiocellNitrogenoGLM_AIC)
+effectAMCarbono<-effectsize(Modelo_final_AM_ratiocellNitrogenoGLM_AIC)
+print(effectAMNitrogeno) 
+print(effectAMCarbono)
+
+
+#Ecto
+
+effectEctoNitrogeno<-effectsize(Modelo_Final_EM_ratiocell_NitrogenoGLM)
+effectEctoCarbono<-effectsize(Modelo_final_EM_ratiocell_CarbonoGLM)
+print(effectEctoNitrogeno) 
+print(effectEctoCarbono)
+
+#Ericoide
+effectErNitrogeno<-effectsize(Modelo_Final_ErM_ratiocell_NitrogenoGLM)
+effectErCarbono<-effectsize(Modelo_Final_ErM_ratiocell_CarbonoGLM)
+print(effectErNitrogeno) 
+print(effectErCarbono)
+
+#OM 
+effectOMNitrogeno<-effectsize(Modelo_Final_OM_ratiocell_NitrogenoGLM)
+effectOMCarbono<-effectsize(Modelo_Final_OM_ratiocell_CarbonoGLM)
+print(effectOMNitrogeno) 
+print(effectOMCarbono)
+
+#WaNMN
+
+effectWanNMNitrogeno<-effectsize(Modelo_Final_WanNm_ratiocell_NitrogenoGLM)
+effectWanNMCarbono<-effectsize(Modelo_Final_WanNm_ratiocell_CarbonoGLM)
+print(effectWanNMNitrogeno) 
+print(effectWanNMCarbono)
+
+
+
 
 library(QuantPsyc)
 
