@@ -1,5 +1,6 @@
 # micoandes
 
+
 Here we share the code used for Rendon et al. “Diversity of mycorrhizal types along
 altitudinal gradients in the tropical Andes”.
 
