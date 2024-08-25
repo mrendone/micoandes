@@ -590,6 +590,28 @@ cowplot::plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
 Graph5<-cowplot::plot_grid(shannonGLM_final, CarbonGLM_final, NitrogenGLM_final,
                   ncol = 1, nrow = 3, align = "v" , labels = c("a", "b", "c"))
 
+############
+# Figure 6 #
+############
+
+AM_ratiocell_BIO1_12<-ggplot(mayores_a_100m, aes(BIO1,BIO12))+
+  geom_point(aes(color = AM_ratiocell)) +
+  theme_classic()+
+  labs(x="Annual Mean Temperature °C", y= "Average annual Precipitation mm")+
+  scale_color_viridis(option = "C")+
+  labs(color = "Proportion of AM per cell")
+
+
+AM_ratiocell_OCSTHA_Nitrogeno<-ggplot(mayores_a_100m, aes(OCSTHA,Nitrogeno))+
+  geom_point(aes(color = AM_ratiocell)) +
+  theme_classic()+
+  labs(x="Soil organic carbon stock ton/ha", y= "Total Nitrogeno in soil (cg/kg)")+
+  scale_color_viridis(option = "C") +
+  labs(color = "Proportion of AM per cell")
+
+
+Graph6<-cowplot::plot_grid(AM_ratiocell_BIO1_12, AM_ratiocell_OCSTHA_Nitrogeno,
+                           ncol = 2, nrow = 1, align = "h" , labels = c("a", "b"))
 
 ############
 # Figure 7 #
